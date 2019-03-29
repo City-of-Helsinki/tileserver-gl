@@ -282,6 +282,35 @@ module.exports = function(options, repo, params, id, publicUrl, dataResolver) {
   var dataProjWGStoInternalWGS = null;
 
   var queue = [];
+
+  // patch any fill-extrusions as they make zero sense when rendering on server
+  var patchedLayers = [];
+  styleJSON.layers.forEach(function(layer) {
+    if (layer.type == 'fill-extrusion') {
+      // replace fill-extrusion with top layer with corresponding height
+      layer.type = 'fill';
+      var patchedPaint = {};
+      Object.keys(layer.paint).forEach(function(name) {
+        // height converted to translate
+        if (name == 'fill-extrusion-height') {
+          // currently, data-based expressions are not supported in translate, just increase height starting from minZoom
+          patchedPaint['fill-translate'] = {};
+          patchedPaint['fill-translate']['stops'] = [[layer.minzoom, [0,0]],[layer.minzoom+5, [0,-8]]];
+        } else if (name == 'fill-extrusion-base') {
+          // sets base to default
+        } else if (name.includes('fill-extrusion')) {
+          // color, opacity and translate-anchor work as is
+          patchedPaint[name.replace('fill-extrusion','fill')] = layer.paint[name];
+        };
+      });
+      // add darkened outlines to top layer sans extrusion
+      patchedPaint['fill-outline-color'] = Color(layer.paint['fill-extrusion-color']).darken(0.3).string();
+      layer.paint = patchedPaint;
+    }
+    patchedLayers.push(layer);
+  });
+  styleJSON.layers = patchedLayers;
+
   Object.keys(styleJSON.sources).forEach(function(name) {
     var source = styleJSON.sources[name];
     var url = source.url;
