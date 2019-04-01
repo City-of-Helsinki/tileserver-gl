@@ -427,20 +427,6 @@ module.exports = function(options, repo, params, id, publicUrl, dataResolver) {
       return res.status(400).send('Invalid format');
     }
 
-    // at this point, we create the renderer, so we always patch tileJSON according to language
-    if (!opt_language) {
-      // the default language field in osm data
-      opt_language = 'latin'
-    };
-    var patchedLayers = [];
-    styleJSON.layers.forEach(function(layer) {
-      if (layer.layout && layer.layout.hasOwnProperty('text-field')) {
-        layer.layout['text-field'] = layer.layout['text-field'].replace(/:[a-z]+\}/, ':' + opt_language + '}');
-      }
-      patchedLayers.push(layer);
-    });
-    styleJSON.layers = patchedLayers;
-
     var pool = map.renderers[scale];
     pool.acquire(function(err, renderer) {
       var mbglZ = Math.max(0, z - 1);
@@ -456,7 +442,20 @@ module.exports = function(options, repo, params, id, publicUrl, dataResolver) {
         params.width *= 2;
         params.height *= 2;
       }
+      // before rendering, check and possibly set the right language
+      if (!opt_language) {
+        // the default language field in osm data
+        opt_language = 'latin'
+      };
       if (opt_language != styleJSON.metadata['language']) {
+        var patchedLayers = [];
+        styleJSON.layers.forEach(function(layer) {
+          if (layer.layout && layer.layout.hasOwnProperty('text-field')) {
+            layer.layout['text-field'] = layer.layout['text-field'].replace(/:[a-z]+\}/, ':' + opt_language + '}');
+          }
+          patchedLayers.push(layer);
+        });
+        styleJSON.layers = patchedLayers;
         styleJSON.metadata['language'] = opt_language;
         renderer.load(styleJSON);
       }
