@@ -29,6 +29,10 @@ var getScale = function(scale) {
   return (scale || '@1x').slice(1, 2) | 0;
 };
 
+var getLanguage = function(language) {
+  return language ? language.slice(1,3) : 'latin';
+}
+
 mbgl.on('message', function(e) {
   if (e.severity == 'WARNING' || e.severity == 'ERROR') {
     console.log('mbgl:', e);
@@ -106,6 +110,7 @@ module.exports = function(options, repo, params, id, publicUrl, dataResolver) {
     scalePattern += i.toFixed();
   }
   scalePattern = '@[' + scalePattern + ']x';
+  var languagePattern = '@[a-z][a-z]';
 
   var lastModified = new Date().toUTCString();
 
@@ -401,11 +406,11 @@ module.exports = function(options, repo, params, id, publicUrl, dataResolver) {
   repo[id] = tileJSON;
 
   var tilePattern = '/' + id + '/:z(\\d+)/:x(\\d+)/:y(\\d+)' +
-                    ':scale(' + scalePattern + ')?\.:format([\\w]+)';
+                    ':scale(' + scalePattern + ')?:language(' + languagePattern + ')?\.:format([\\w]+)';
 
   var respondImage = function(z, lon, lat, bearing, pitch,
                               width, height, scale, format, res, next,
-                              opt_overlay) {
+                              opt_overlay, opt_language) {
     if (Math.abs(lon) > 180 || Math.abs(lat) > 85.06 ||
         lon != lon || lat != lat) {
       return res.status(400).send('Invalid center');
@@ -422,6 +427,20 @@ module.exports = function(options, repo, params, id, publicUrl, dataResolver) {
       return res.status(400).send('Invalid format');
     }
 
+    // at this point, we create the renderer, so we always patch tileJSON according to language
+    if (!opt_language) {
+      // the default language field in osm data
+      opt_language = 'latin'
+    };
+    var patchedLayers = [];
+    styleJSON.layers.forEach(function(layer) {
+      if (layer.layout && layer.layout.hasOwnProperty('text-field')) {
+        layer.layout['text-field'] = layer.layout['text-field'].replace(/:[a-z]+\}/, ':' + opt_language + '}');
+      }
+      patchedLayers.push(layer);
+    });
+    styleJSON.layers = patchedLayers;
+
     var pool = map.renderers[scale];
     pool.acquire(function(err, renderer) {
       var mbglZ = Math.max(0, z - 1);
@@ -436,6 +455,10 @@ module.exports = function(options, repo, params, id, publicUrl, dataResolver) {
       if (z == 0) {
         params.width *= 2;
         params.height *= 2;
+      }
+      if (opt_language != styleJSON.metadata['language']) {
+        styleJSON.metadata['language'] = opt_language;
+        renderer.load(styleJSON);
       }
       renderer.render(params, function(err, data) {
         pool.release(renderer);
@@ -511,6 +534,7 @@ module.exports = function(options, repo, params, id, publicUrl, dataResolver) {
         x = req.params.x | 0,
         y = req.params.y | 0,
         scale = getScale(req.params.scale),
+        language = getLanguage(req.params.language),
         format = req.params.format;
     if (z < 0 || x < 0 || y < 0 ||
         z > 20 || x >= Math.pow(2, z) || y >= Math.pow(2, z)) {
@@ -522,7 +546,7 @@ module.exports = function(options, repo, params, id, publicUrl, dataResolver) {
       ((y + 0.5) / (1 << z)) * (256 << z)
     ], z);
     return respondImage(z, tileCenter[0], tileCenter[1], 0, 0,
-                        tileSize, tileSize, scale, format, res, next);
+                        tileSize, tileSize, scale, format, res, next, null, language);
   });
 
   var extractPathFromQuery = function(query, transformer) {
