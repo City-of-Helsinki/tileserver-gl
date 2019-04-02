@@ -447,16 +447,21 @@ module.exports = function(options, repo, params, id, publicUrl, dataResolver) {
         // the default language field in osm data
         opt_language = 'latin'
       };
-      if (opt_language != styleJSON.metadata['language']) {
-        var patchedLayers = [];
-        styleJSON.layers.forEach(function(layer) {
-          if (layer.layout && layer.layout.hasOwnProperty('text-field')) {
-            layer.layout['text-field'] = layer.layout['text-field'].replace(/:[a-z]+\}/, ':' + opt_language + '}');
-          }
-          patchedLayers.push(layer);
-        });
-        styleJSON.layers = patchedLayers;
-        styleJSON.metadata['language'] = opt_language;
+      if (opt_language != renderer.language) {
+        // renderer language must be changed
+        if (opt_language != styleJSON.metadata['language']) {
+          // stylejson language must be changed
+          var patchedLayers = [];
+          styleJSON.layers.forEach(function(layer) {
+            if (layer.layout && layer.layout.hasOwnProperty('text-field')) {
+              layer.layout['text-field'] = layer.layout['text-field'].replace(/:[a-z]+\}/, ':' + opt_language + '}');
+            }
+            patchedLayers.push(layer);
+          });
+          styleJSON.layers = patchedLayers;
+          styleJSON.metadata['language'] = opt_language;
+        }
+        renderer.language = opt_language;
         renderer.load(styleJSON);
       }
       renderer.render(params, function(err, data) {
