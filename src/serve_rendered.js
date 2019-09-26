@@ -183,7 +183,7 @@ module.exports = function(options, repo, params, id, publicUrl, dataResolver) {
                 format = parts[5].split('.')[1];
             source.getTile(z, x, y, function(err, data, headers) {
               if (err) {
-                //console.log('MBTiles error, serving empty', err);
+                if (options.verbose) console.log('MBTiles error, serving empty', err);
                 createEmptyResponse(sourceInfo.format, sourceInfo.color, callback);
                 return;
               }
@@ -268,6 +268,18 @@ module.exports = function(options, repo, params, id, publicUrl, dataResolver) {
   if (styleJSON.glyphs && !httpTester.test(styleJSON.glyphs)) {
     styleJSON.glyphs = 'fonts://' + styleJSON.glyphs;
   }
+
+  (styleJSON.layers || []).forEach(function(layer) {
+    if (layer && layer.paint) {
+      // Remove (flatten) 3D buildings
+      if (layer.paint['fill-extrusion-height']) {
+        layer.paint['fill-extrusion-height'] = 0;
+      }
+      if (layer.paint['fill-extrusion-base']) {
+        layer.paint['fill-extrusion-base'] = 0;
+      }
+    }
+  });
 
   var tileJSON = {
     'tilejson': '2.0.0',
