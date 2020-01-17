@@ -27,8 +27,7 @@ const utils = require('./utils');
 const FLOAT_PATTERN = '[+-]?(?:\\d+|\\d+\.?\\d+)';
 
 const getScale = scale => (scale || '@1x').slice(1, 2) | 0;
-
-var getLanguage = language =>  language ? language.slice(1,3) : 'latin';
+const getLanguage = language =>  language ? language.slice(1,3) : 'latin';
 
 mbgl.on('message', e => {
   if (e.severity === 'WARNING' || e.severity === 'ERROR') {
@@ -409,8 +408,8 @@ module.exports = (options, repo, params, id, publicUrl, dataResolver) => {
 
   repo[id] = tileJSON;
 
-  const tilePattern = '/' + id + '/:z(\\d+)/:x(\\d+)/:y(\\d+)' +
-                    ':scale(' + scalePattern + ')?:language(' + languagePattern + ')?\.:format([\\w]+)';
+  const tilePattern = '/${id}/:z(\\d+)/:x(\\d+)/:y(\\d+)' +
+                    ':scale(${scalePattern})?:language(${languagePattern})?\.:format([\\w]+)';
 
   const respondImage = (z, lon, lat, bearing, pitch,
                         width, height, scale, format, res, next,
