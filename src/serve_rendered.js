@@ -408,8 +408,7 @@ module.exports = (options, repo, params, id, publicUrl, dataResolver) => {
 
   repo[id] = tileJSON;
 
-  const tilePattern = '/${id}/:z(\\d+)/:x(\\d+)/:y(\\d+)' +
-                    ':scale(${scalePattern})?:language(${languagePattern})?\.:format([\\w]+)';
+  const tilePattern = `/${id}/:z(\\d+)/:x(\\d+)/:y(\\d+):scale(${scalePattern})?:language(${languagePattern})?.:format([\\w]+)`;
 
   const respondImage = (z, lon, lat, bearing, pitch,
                         width, height, scale, format, res, next,
