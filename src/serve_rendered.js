@@ -461,7 +461,7 @@ module.exports = (options, repo, params, id, publicUrl, dataResolver) => {
         if (opt_language != styleJSON.metadata['language']) {
           // stylejson language must be changed
           let patchedLayers = [];
-          for (layer of styleJSON.layers) {
+          for (let layer of styleJSON.layers) {
             if (layer.layout && layer.layout.hasOwnProperty('text-field')) {
               layer.layout['text-field'] = layer.layout['text-field'].replace(/:[a-z]+\}/, ':' + opt_language + '}');
             }
