@@ -6,7 +6,7 @@
   "bin": "src/main.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/maptiler/tileserver-gl.git"
+    "url": "https://github.com/City-of-Helsinki/tileserver-gl.git"
   },
   "license": "BSD-2-Clause",
   "engines": {
